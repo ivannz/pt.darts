@@ -18,7 +18,6 @@ OPS = {
     'conv_7x1_1x7': lambda C, stride, affine: FacConv(C, C, 7, stride, 3, affine=affine)
 }
 
-
 def drop_path_(x, drop_prob, training):
     if training and drop_prob > 0.:
         keep_prob = 1. - drop_prob
@@ -185,6 +184,7 @@ class MixedOp(nn.Module):
     def __init__(self, C, stride):
         super().__init__()
         self._ops = nn.ModuleList()
+
         for primitive in gt.PRIMITIVES:
             op = OPS[primitive](C, stride, affine=False)
             self._ops.append(op)

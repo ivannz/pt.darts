@@ -9,7 +9,7 @@ import utils
 from models.search_cnn import SearchCNNController
 from architect import Architect
 from visualize import plot
-
+import genotypes as gt
 
 config = SearchConfig()
 
@@ -40,9 +40,12 @@ def main():
     input_size, input_channels, n_classes, train_data = utils.get_data(
         config.dataset, config.data_path, cutout_length=0, validation=False)
 
+    if config.ops_set == 2:
+        gt.PRIMITIVES = gt.PRIMITIVES2
+
     net_crit = nn.CrossEntropyLoss().to(device)
     model = SearchCNNController(input_channels, config.init_channels, n_classes, config.layers,
-                                net_crit, device_ids=config.gpus)
+                                net_crit, n_nodes = config.n_nodes, device_ids=config.gpus)
     model = model.to(device)
 
     # weights optimizer

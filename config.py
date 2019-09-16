@@ -62,6 +62,8 @@ class SearchConfig(BaseConfig):
         parser.add_argument('--alpha_lr', type=float, default=3e-4, help='lr for alpha')
         parser.add_argument('--alpha_weight_decay', type=float, default=1e-3,
                             help='weight decay for alpha')
+        parser.add_argument('--n_nodes', type=int, default=4, help='nodes count in searched cell (without input)')
+        parser.add_argument('--ops_set', type=int, default=1, help='operations set')
 
         return parser
 
@@ -100,6 +102,7 @@ class AugmentConfig(BaseConfig):
         parser.add_argument('--drop_path_prob', type=float, default=0.2, help='drop path prob')
 
         parser.add_argument('--genotype', required=True, help='Cell genotype')
+        parser.add_argument('--ops_set', type=int, default=1, help='operations set')
 
         return parser
 

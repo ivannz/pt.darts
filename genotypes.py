@@ -22,6 +22,13 @@ PRIMITIVES = [
     'none'
 ]
 
+PRIMITIVES2 = [
+    'max_pool_3x3',
+    'skip_connect', # identity
+    'sep_conv_3x3',
+    'dil_conv_3x3',
+    'none'
+]
 
 def to_dag(C_in, gene, reduction):
     """ generate discrete ops from gene """
