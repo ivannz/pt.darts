@@ -5,7 +5,7 @@ import torch
 
 class Architect():
     """ Compute gradients of alphas """
-    def __init__(self, net, w_momentum, w_weight_decay):
+    def __init__(self, net, w_momentum, w_weight_decay, hessian_vector_type = 1):
         """
         Args:
             net
@@ -15,6 +15,7 @@ class Architect():
         self.v_net = copy.deepcopy(net)
         self.w_momentum = w_momentum
         self.w_weight_decay = w_weight_decay
+        self.hessian_vector_type = hessian_vector_type
 
     def virtual_step(self, trn_X, trn_y, xi, w_optim):
         """
@@ -68,11 +69,25 @@ class Architect():
         dalpha = v_grads[:len(v_alphas)]
         dw = v_grads[len(v_alphas):]
 
-        hessian = self.compute_hessian(dw, trn_X, trn_y)
+        def ddot(a, b):
+            return sum(u.flatten() @ v.flatten() for u, v in zip(a, b))
+
+        if self.hessian_vector_type == 1:
+            hessian_vector = self.compute_hessian(dw, trn_X, trn_y)
+        elif self.hessian_vector_type == 2:
+
+            # TROFIM
+            tr_loss = self.net.loss(trn_X, trn_y) # L_train(w)
+            grad_w = torch.autograd.grad(tr_loss, self.net.weights(), create_graph = True)
+            grad_vector = ddot(grad_w, dw)
+
+            hessian_vector = torch.autograd.grad(grad_vector, self.net.alphas(), retain_graph = False)
+        else:
+            hessian_vector = 0
 
         # update final gradient = dalpha - xi*hessian
         with torch.no_grad():
-            for alpha, da, h in zip(self.net.alphas(), dalpha, hessian):
+            for alpha, da, h in zip(self.net.alphas(), dalpha, hessian_vector):
                 alpha.grad = da - xi*h
 
     def compute_hessian(self, dw, trn_X, trn_y):

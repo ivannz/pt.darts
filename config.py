@@ -64,6 +64,7 @@ class SearchConfig(BaseConfig):
                             help='weight decay for alpha')
         parser.add_argument('--n_nodes', type=int, default=4, help='nodes count in searched cell (without input)')
         parser.add_argument('--ops_set', type=int, default=1, help='operations set')
+        parser.add_argument('--hv_type', type=int, default=1, help='')
 
         return parser
 
