@@ -69,12 +69,12 @@ class Architect():
         dalpha = v_grads[:len(v_alphas)]
         dw = v_grads[len(v_alphas):]
 
-        def ddot(a, b):
-            return sum(u.flatten() @ v.flatten() for u, v in zip(a, b))
-
         if self.hessian_vector_type == 1:
             hessian_vector = self.compute_hessian(dw, trn_X, trn_y)
         elif self.hessian_vector_type == 2:
+
+            def ddot(a, b):
+                return sum(u.flatten() @ v.flatten() for u, v in zip(a, b))
 
             # TROFIM
             tr_loss = self.net.loss(trn_X, trn_y) # L_train(w)
@@ -87,8 +87,12 @@ class Architect():
 
         # update final gradient = dalpha - xi*hessian
         with torch.no_grad():
-            for alpha, da, h in zip(self.net.alphas(), dalpha, hessian_vector):
-                alpha.grad = da - xi*h
+            if self.hessian_vector_type > 0:
+                for alpha, da, h in zip(self.net.alphas(), dalpha, hessian_vector):
+                    alpha.grad = da - xi*h
+            else:
+                for alpha, da in zip(self.net.alphas(), dalpha):
+                    alpha.grad = da
 
     def compute_hessian(self, dw, trn_X, trn_y):
         """
