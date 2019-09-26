@@ -73,7 +73,7 @@ def main():
                                                pin_memory=True)
     lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         w_optim, config.epochs, eta_min=config.w_lr_min)
-    architect = Architect(model, config.w_momentum, config.w_weight_decay)
+    architect = Architect(model, config.w_momentum, config.w_weight_decay, config.hv_type)
 
     # training loop
     best_top1 = 0.
