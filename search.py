@@ -2,6 +2,7 @@
 import os
 import torch
 import torch.nn as nn
+import torch.distributed as dist
 import numpy as np
 from tensorboardX import SummaryWriter
 from config import SearchConfig
@@ -10,6 +11,7 @@ from models.search_cnn import SearchCNNController
 from architect import Architect
 from visualize import plot
 import genotypes as gt
+from copy import copy
 
 config = SearchConfig()
 
@@ -22,6 +24,11 @@ writer.add_text('config', config.as_markdown(), 0)
 logger = utils.get_logger(os.path.join(config.path, "{}.log".format(config.name)))
 config.print_params(logger.info)
 
+def init_processes(rank, size, backend='Gloo'):
+    """ Initialize the distributed environment. """
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '29500'
+    dist.init_process_group('Gloo', rank=rank, world_size=size)
 
 def main():
     logger.info("Logger is set - training start")
@@ -42,6 +49,10 @@ def main():
 
     if config.ops_set == 2:
         gt.PRIMITIVES = gt.PRIMITIVES2
+
+    """ Initialize the distributed environment. """
+    if config.multi_avg_size > 0:
+        init_processes(config.multi_avg_rank, config.multi_avg_size, backend='Gloo')
 
     net_crit = nn.CrossEntropyLoss().to(device)
     model = SearchCNNController(input_channels, config.init_channels, n_classes, config.layers,
@@ -135,6 +146,12 @@ def train(train_loader, valid_loader, model, architect, w_optim, alpha_optim, lr
         architect.unrolled_backward(trn_X, trn_y, val_X, val_y, lr, w_optim)
         alpha_optim.step()
 
+        if config.multi_avg_size and step % 100 == 0:
+            for elem in architect.net.alphas():
+                dist.all_reduce(elem.data, op = dist.ReduceOp.SUM)
+                elem.data = elem.data / config.multi_avg_size
+            logger.info(f"step = {step}, REDUCE OK")
+
         # phase 1. child network step (w)
         w_optim.zero_grad()
         logits = model(trn_X)
@@ -198,7 +215,6 @@ def validate(valid_loader, model, epoch, cur_step):
     logger.info("Valid: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.epochs, top1.avg))
 
     return top1.avg
-
 
 if __name__ == "__main__":
     main()
